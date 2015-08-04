@@ -25,5 +25,6 @@ DefinitionBlock (
     0x1                 // OEM Revision
     )
 {
+#define TPM_1_2
 #include "ssdt-tpm-common.dsl"
 }
