@@ -3494,7 +3494,7 @@ Arguments: None
 Example:
 
 -> { "execute": "query-tpm-types" }
-<- { "return": [ "passthrough" ] }
+<- { "return": [ "passthrough", "cuse-tpm" ] }
 
 EQMP
 
