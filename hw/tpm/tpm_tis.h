@@ -67,6 +67,8 @@ typedef struct TPMTISEmuState {
 
     qemu_irq irq;
     uint32_t irq_num;
+
+    uint8_t locty0_ram[0x60]; /* a vendor spec. extension at 0xfa0-0xfff in locality 0 */
 } TPMTISEmuState;
 
 #endif /* TPM_TPM_TIS_H */

@@ -61,6 +61,7 @@
 
 /* vendor-specific registers */
 #define TPM_TIS_REG_DEBUG                 0xf90
+#define TPM_TIS_REG_RAM                   0xfa0
 
 #define TPM_TIS_STS_TPM_FAMILY_MASK         (0x3 << 26)/* TPM 2.0 */
 #define TPM_TIS_STS_TPM_FAMILY1_2           (0 << 26)  /* TPM 2.0 */
@@ -518,6 +519,7 @@ static uint64_t tpm_tis_mmio_read(void *opaque, hwaddr addr,
     uint8_t locty = tpm_tis_locality_from_addr(addr);
     uint32_t avail;
     uint8_t v;
+    int c;
 
     if (tpm_backend_had_startup_error(s->be_driver)) {
         return val;
@@ -614,6 +616,18 @@ static uint64_t tpm_tis_mmio_read(void *opaque, hwaddr addr,
         tpm_tis_dump_state(opaque, addr);
         break;
 #endif
+    case TPM_TIS_REG_RAM ... 0xfff:
+        if (locty == 0) {
+            /* RAM only in locality 0 -- allow unaligned accesses */
+            offset = addr & 0xfff;
+            shift = 0;
+
+            for (c = size - 1; c >= 0; c--) {
+                val <<= 8;
+                val |= tis->locty0_ram[offset - TPM_TIS_REG_RAM + c];
+            }
+        }
+        break;
     }
 
     if (shift) {
@@ -953,6 +967,19 @@ static void tpm_tis_mmio_write_intern(void *opaque, hwaddr addr,
             }
         }
         break;
+
+    case TPM_TIS_REG_RAM ... 0xfff:
+        if (locty == 0) {
+            /* RAM only in locality 0 -- allow unaligned accesses */
+            off = addr & 0xfff;
+            val >>= shift;
+            /* only support locality 0 */
+            for (c = 0; c <= size - 1; c++) {
+                tis->locty0_ram[off - TPM_TIS_REG_RAM + c] = val;
+                val >>= 8;
+            }
+        }
+        break;
     }
 }
 
@@ -1163,6 +1190,8 @@ static const VMStateDescription vmstate_tpm_tis = {
 
         VMSTATE_STRUCT_ARRAY(s.tis.loc, TPMState, TPM_TIS_NUM_LOCALITIES, 1,
                              vmstate_locty, TPMLocality),
+
+        VMSTATE_BUFFER(s.tis.locty0_ram, TPMState),
 
         VMSTATE_END_OF_LIST()
     }
