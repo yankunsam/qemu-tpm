@@ -12,18 +12,25 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-#include "hw/acpi/tpm.h"
 
-ACPI_EXTRACT_ALL_CODE ssdt_tpm_aml
+/*
+ * Common parts for TPM 1.2 and TPM 2 (with slight differences for PPI)
+ * to be #included
+ */
 
-DefinitionBlock (
-    "ssdt-tpm.aml",     // Output Filename
-    "SSDT",             // Signature
-    0x01,               // SSDT Compliance Revision
-    "BXPC",             // OEMID
-    "BXSSDT",           // TABLE ID
-    0x1                 // OEM Revision
-    )
-{
-#include "ssdt-tpm-common.dsl"
-}
+
+    External(\_SB.PCI0.ISA, DeviceObj)
+    Scope(\_SB.PCI0.ISA) {
+        /* TPM with emulated TPM TIS interface */
+        Device (TPM) {
+            Name (_HID, EisaID ("PNP0C31"))
+            Name (_CRS, ResourceTemplate ()
+            {
+                Memory32Fixed (ReadWrite, TPM_TIS_ADDR_BASE, TPM_TIS_ADDR_SIZE)
+                IRQNoFlags () {TPM_TIS_IRQ}
+            })
+            Method (_STA, 0, NotSerialized) {
+                Return (0x0F)
+            }
+        }
+    }
