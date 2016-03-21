@@ -1355,21 +1355,19 @@ build_ssdt(GArray *table_data, GArray *linker,
                 Aml *scope = aml_scope("PCI0");
                 /* Scan all PCI buses. Generate tables to support hotplug. */
                 build_append_pci_bus_devices(scope, bus, pm->pcihp_bridge_en);
-
-                if (misc->tpm_version != TPM_VERSION_UNSPEC) {
-                    dev = aml_device("ISA.TPM");
-                    aml_append(dev, aml_name_decl("_HID", aml_eisaid("PNP0C31")));
-                    aml_append(dev, aml_name_decl("_STA", aml_int(0xF)));
-                    crs = aml_resource_template();
-                    aml_append(crs, aml_memory32_fixed(TPM_TIS_ADDR_BASE,
-                               TPM_TIS_ADDR_SIZE, AML_READ_WRITE));
-                    aml_append(crs, aml_irq_no_flags(TPM_TIS_IRQ));
-                    aml_append(dev, aml_name_decl("_CRS", crs));
-                    aml_append(scope, dev);
-                }
-
-                aml_append(sb_scope, scope);
             }
+        }
+
+        if (misc->tpm_version != TPM_VERSION_UNSPEC) {
+            dev = aml_device("TPM");
+            aml_append(dev, aml_name_decl("_HID", aml_eisaid("PNP0C31")));
+            aml_append(dev, aml_name_decl("_STA", aml_int(0xF)));
+            crs = aml_resource_template();
+            aml_append(crs, aml_memory32_fixed(TPM_TIS_ADDR_BASE,
+                       TPM_TIS_ADDR_SIZE, AML_READ_WRITE));
+            //aml_append(crs, aml_irq_no_flags(TPM_TIS_IRQ));
+            aml_append(dev, aml_name_decl("_CRS", crs));
+            aml_append(sb_scope, dev);
         }
         aml_append(ssdt, sb_scope);
     }
